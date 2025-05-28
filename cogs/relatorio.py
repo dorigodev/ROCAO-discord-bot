@@ -1,8 +1,16 @@
 import asyncio
 import datetime
 import discord
+import os
 from discord import app_commands
 from discord.ext import commands
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+category = int(os.getenv('ID_CATEGORY_RELATORIOS'))
+log_channel = int(os.getenv('ID_CHANNEL_LOG_RELATORIOS'))
 
 QUESTIONS = [
     {
@@ -65,7 +73,7 @@ class Relatorio(commands.Cog,):
     @app_commands.describe(member="O membro para o qual você deseja criar o relatório.")
     async def criar_relatorio(self, interaction: discord.Interaction, member: discord.Member):
             relatorio_category = discord.utils.get(interaction.guild.categories,
-                                                   id=1376945856221155361)
+                                                   id=category)
             relatorio_channel = await interaction.guild.create_text_channel(name=f"relatorio {member.nick} - {datetime.datetime.now()}",
                                                                             category=relatorio_category,
                                                                             overwrites={
@@ -144,11 +152,12 @@ class Relatorio(commands.Cog,):
             question_text = q_data['question']
             answer_text = responses.get(f'Q{i+1}', 'N/A')
             embed.add_field(name=f"❓ Pergunta:"
-                                 f" {question_text}",
+                                 f" {question_text}" ,
                             value=f"✅ Resposta: {answer_text}", inline=False)
 
 
-        channel_log = discord.utils.get(channel.guild.channels, id=1376946523526660128)
+
+        channel_log = discord.utils.get(channel.guild.channels, id=log_channel)
         await channel_log.send(embed=embed)
 
         await channel.send("Relatório concluído! Você pode fechar este canal agora.")
