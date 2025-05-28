@@ -8,6 +8,7 @@
     "type": "descriptive",
     "question": "Descreva o motivo da nota para a Dirigibilidade. Você tem 10 minutos."
   },
+
   {
     "type": "multiple_choice",
     "question": "De uma nota para a Modulação:",
@@ -16,5 +17,53 @@
   {
     "type": "descriptive",
     "question": "Descreva o motivo da nota para a Dirigibilidade. Você tem 10 minutos."
+  },
+
+  {
+    "type": "multiple_choice",
+    "question": "De uma nota para a Adiantamento:",
+    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+  },
+  {
+    "type": "descriptive",
+    "question": "Descreva o motivo da nota para a Adiantamento. Você tem 10 minutos."
+  },
+
+  {
+    "type": "multiple_choice",
+    "question": "De uma nota para a Modulação:",
+    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+  },
+  {
+    "type": "descriptive",
+    "question": "Descreva o motivo da nota para a Modulação. Você tem 10 minutos."
+  },
+
+  {
+    "type": "multiple_choice",
+    "question": "De uma nota para a Abordagem:",
+    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+  },
+  {
+    "type": "descriptive",
+    "question": "Descreva o motivo da nota para a Abordagem. Você tem 10 minutos."
+  },
+
+  {
+    "type": "multiple_choice",
+    "question": "De uma nota para a Postura:",
+    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+  },
+  {
+    "type": "descriptive",
+    "question": "Descreva o motivo da nota para a Postura. Você tem 10 minutos."
+  },
+
+  {
+    "type": "descriptive",
+    "question": "Algum outro ponto que te chamou atenção? Você tem 10 minutos."
   }
+
+
+
 ]
