@@ -5,37 +5,23 @@ import os
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
-
+import json
 
 load_dotenv()
 
 ID_CATEGORY_RELATORIOS = int(os.getenv('ID_CATEGORY_RELATORIOS'))
 ID_CHANNEL_LOG_RELATORIOS = int(os.getenv('ID_CHANNEL_LOG_RELATORIOS'))
 
-QUESTIONS = [
-    {
-        "type": "multiple_choice",
-        "question": "De uma nota para o Dirigibilidade",
-        "options": ["Péssimo ", "Ruim ", "Mediano ", "Bom", "Excelente"]
-    },
-
-    {
-        "type": "descriptive",
-        "question": "Descreva o motivo da nota para a Dirigibilidade."
-    },
-    {
-        "type": "multiple_choice",
-        "question": "De uma nota para o Modulação",
-        "options": ["Péssimo ", "Ruim ", "Mediano ", "Bom", "Excelente"]
-    },
-
-    {
-        "type": "descriptive",
-        "question": "Descreva o motivo da nota para a Modulação."
-    },
-
-
-]
+try:
+    with open('questions.json', 'r', encoding='utf-8') as f:
+        QUESTIONS = json.load(f)
+    print("Perguntas carregadas com sucesso de questions.json")
+except FileNotFoundError:
+    print("Erro: O arquivo questions.json não foi encontrado. Certifique-se de que ele está na mesma pasta do bot.")
+    QUESTIONS = [] # Define uma lista vazia para evitar erros posteriores
+except json.JSONDecodeError:
+    print("Erro: O arquivo questions.json está mal formatado. Verifique a sintaxe JSON.")
+    QUESTIONS = [] # Define uma lista vazia para evitar erros posteriores
 
 class QuestionView(discord.ui.View):
     def __init__(self, question_data, reporter_id, timeout=180):
@@ -70,8 +56,27 @@ class Relatorio(commands.Cog,):
         self.active_reports = {}
 
     @app_commands.command(name="criar_relatorio", description="Cria um relatorio de um membro especifico da ROCAM")
-    @app_commands.describe(member="O membro para o qual você deseja criar o relatório.")
-    async def criar_relatorio(self, interaction: discord.Interaction, member: discord.Member):
+    @app_commands.describe(member="O membro para o qual você deseja criar o relatório.",
+    piloto="Um nome personalizado para o relatório, se o membro não for do Discord (opcional).")
+    async def criar_relatorio(self, interaction: discord.Interaction, member: discord.Member = None, piloto: str = None ):
+
+        target_name = None
+        target_mention = "Nome Inválido" # Valor padrão para o caso de erro
+        target_id_for_active_reports = interaction.user.id # Continua rastreando pelo relator
+
+        if member:
+            target_name = member.display_name
+            target_mention = member.mention
+        elif piloto:
+            target_name = piloto
+            target_mention = f"**{piloto}**"
+        else:
+            await interaction.followup.send(
+                "Você deve especificar um `member` ou um `piloto` para criar o relatório.",
+                ephemeral=True
+            )
+            return
+
         if interaction.user.id in self.active_reports:
             current_channel_id = self.active_reports[interaction.user.id]
             current_channel = interaction.guild.get_channel(current_channel_id)
@@ -86,26 +91,25 @@ class Relatorio(commands.Cog,):
                     "Um relatório anterior não foi encontrado. Iniciando um novo...",
                     ephemeral=True
                 )
-                await self._create_and_start_report(interaction, member)
+                await self._create_and_start_report(interaction, target_name, target_mention)
             return
 
-        await self._create_and_start_report(interaction, member)
-    async def _create_and_start_report(self, interaction: discord.Interaction, member: discord.Member):
+        await self._create_and_start_report(interaction, target_name, target_mention)
+
+    async def _create_and_start_report(self, interaction: discord.Interaction, target_name: str, target_mention: str):
         try:
-            # Tenta obter a categoria de relatórios
             relatorio_category = discord.utils.get(interaction.guild.categories, id=ID_CATEGORY_RELATORIOS)
             if not relatorio_category:
                 await interaction.response.send_message("A categoria de relatórios não foi encontrada. Verifique o ID configurado.", ephemeral=True)
                 return
 
-            # Cria o canal de texto para o relatório
             relatorio_channel = await interaction.guild.create_text_channel(
-                name=f"relatorio-{member.display_name.lower().replace(' ', '-')}-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
+                name=f"relatorio-{target_name.lower().replace(' ', '-')}-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
                 category=relatorio_category,
                 overwrites={
-                    interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False), # Ninguém pode ver por padrão
-                    interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True), # O relator pode ver e enviar mensagens
-                    self.bot.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True, manage_messages=True) # Bot precisa de permissões
+                    interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+                    interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+                    self.bot.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True, manage_messages=True)
                 }
             )
         except discord.Forbidden:
@@ -116,16 +120,15 @@ class Relatorio(commands.Cog,):
             print(f"Erro ao criar o canal do relatório: {e}")
             return
 
-        # Adiciona o relatório ativo ao dicionário, usando o ID do relator
         self.active_reports[interaction.user.id] = relatorio_channel.id
 
         await interaction.response.send_message(f"Canal de relatório criado: {relatorio_channel.mention}", ephemeral=True)
-        await self.start_questions(relatorio_channel, member, interaction)
+        await self.start_questions(relatorio_channel, target_name, target_mention, interaction)
 
-    async def start_questions(self, channel: discord.TextChannel, member: discord.Member, interaction: discord.Interaction):
+    async def start_questions(self, channel: discord.TextChannel, target_name: str, target_mention: str, interaction: discord.Interaction):
         responses = {}
 
-        await channel.send(f"Olá {interaction.user.mention}! Este é o canal do seu relatório sobre o Piloto {member.nick}. Por favor, responda às perguntas abaixo.")
+        await channel.send(f"Olá {interaction.user.mention}! Este é o canal do seu relatório sobre **{target_name}**. Por favor, responda às perguntas abaixo.")
 
         for i, q_data in enumerate(QUESTIONS):
             question_text = f"**Pergunta:** {q_data['question']}"
@@ -144,7 +147,7 @@ class Relatorio(commands.Cog,):
                         option_index = int(view.response.split('_')[1])
                         selected_option = q_data["options"][option_index]
                         responses[f"Q{i+1}"] = selected_option
-                        await channel.send(f"✅ Sua resposta: **{selected_option}** foi registrada!", delete_after=5)
+                        await channel.send(f"✅ Sua resposta: **{selected_option}** foi registrada!")
                 else:
                     responses[f"Q{i+1}"] = "Nenhuma resposta fornecida (botão não clicado)."
 
@@ -173,7 +176,7 @@ class Relatorio(commands.Cog,):
 
         embed = discord.Embed(
             title=f"📋 Relatório de Avaliação do Piloto",
-            description=f"**Piloto Avaliado:**{member.display_name}\n"
+            description=f"**Piloto Avaliado:** {target_name}\n"
                         f"**Relatório Feito Por:** {interaction.user.display_name}\n"
                         f"**Data/Hora:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
             color=discord.Color.blue()
