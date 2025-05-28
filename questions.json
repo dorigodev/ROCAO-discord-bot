@@ -1,0 +1,20 @@
+[
+  {
+    "type": "multiple_choice",
+    "question": "De uma nota para a Dirigibilidade:",
+    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+  },
+  {
+    "type": "descriptive",
+    "question": "Descreva o motivo da nota para a Dirigibilidade. Você tem 10 minutos."
+  },
+  {
+    "type": "multiple_choice",
+    "question": "De uma nota para a Modulação:",
+    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+  },
+  {
+    "type": "descriptive",
+    "question": "Descreva o motivo da nota para a Dirigibilidade. Você tem 10 minutos."
+  }
+]
