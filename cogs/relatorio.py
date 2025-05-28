@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-category = int(os.getenv('ID_CATEGORY_RELATORIOS'))
-log_channel = int(os.getenv('ID_CHANNEL_LOG_RELATORIOS'))
+ID_CATEGORY_RELATORIOS = int(os.getenv('ID_CATEGORY_RELATORIOS'))
+ID_CHANNEL_LOG_RELATORIOS = int(os.getenv('ID_CHANNEL_LOG_RELATORIOS'))
 
 QUESTIONS = [
     {
@@ -73,7 +73,7 @@ class Relatorio(commands.Cog,):
     @app_commands.describe(member="O membro para o qual você deseja criar o relatório.")
     async def criar_relatorio(self, interaction: discord.Interaction, member: discord.Member):
             relatorio_category = discord.utils.get(interaction.guild.categories,
-                                                   id=category)
+                                                   id=ID_CATEGORY_RELATORIOS)
             relatorio_channel = await interaction.guild.create_text_channel(name=f"relatorio {member.nick} - {datetime.datetime.now()}",
                                                                             category=relatorio_category,
                                                                             overwrites={
@@ -132,7 +132,7 @@ class Relatorio(commands.Cog,):
             await asyncio.sleep(0.5)
 
         try:
-            await channel.purge(limit=1000)
+            await channel.purge(limit=100)
         except discord.Forbidden:
             print(f"Não pude limpar o chat final. Verifique as permissões.")
         except Exception as e:
@@ -157,15 +157,32 @@ class Relatorio(commands.Cog,):
 
 
 
-        channel_log = discord.utils.get(channel.guild.channels, id=log_channel)
-        await channel_log.send(embed=embed)
+        channel_log = discord.utils.get(channel.guild.channels, id=ID_CHANNEL_LOG_RELATORIOS)
+        if channel_log:
+            try:
+                await channel_log.send(embed=embed)
+            except discord.Forbidden:
+                await channel.send("Não tenho permissão para enviar mensagens no canal de log. O relatório foi concluído, mas não salvo no log.", delete_after=15)
+                print(f"Não tenho permissão para enviar mensagens no canal de log ({ID_CHANNEL_LOG_RELATORIOS}).")
+            except Exception as e:
+                await channel.send(f"Ocorreu um erro ao enviar o relatório para o canal de log: {e}", delete_after=15)
+                print(f"Erro ao enviar o relatório para o canal de log: {e}")
+        else:
+            await channel.send("O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.", delete_after=15)
+            print(f"Canal de log de relatórios não encontrado com ID: {ID_CHANNEL_LOG_RELATORIOS}")
 
-        await channel.send("Relatório concluído! Você pode fechar este canal agora.")
-        if member.id in self.active_reports:
-            del self.active_reports[member.id]
 
-        await asyncio.sleep(5)
-        await channel.delete()
+        await channel.send("🎉 Relatório concluído! Este canal será excluído em breve.")
+        if interaction.user.id in self.active_reports:
+            del self.active_reports[interaction.user.id]
+
+        await asyncio.sleep(10) # Espera 10 segundos antes de deletar o canal
+        try:
+            await channel.delete()
+        except discord.Forbidden:
+            print(f"Não tenho permissão para deletar o canal {channel.name}. Deletar manualmente.")
+        except Exception as e:
+            print(f"Erro ao deletar o canal {channel.name}: {e}")
 
 
 async def setup(bot):
