@@ -72,27 +72,58 @@ class Relatorio(commands.Cog,):
     @app_commands.command(name="criar_relatorio", description="Cria um relatorio de um membro especifico da ROCAM")
     @app_commands.describe(member="O membro para o qual você deseja criar o relatório.")
     async def criar_relatorio(self, interaction: discord.Interaction, member: discord.Member):
-            relatorio_category = discord.utils.get(interaction.guild.categories,
-                                                   id=ID_CATEGORY_RELATORIOS)
-            relatorio_channel = await interaction.guild.create_text_channel(name=f"relatorio {member.nick} - {datetime.datetime.now()}",
-                                                                            category=relatorio_category,
-                                                                            overwrites={
-                                                                                interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-                                                                                interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
-                                                                            })
+        if interaction.user.id in self.active_reports:
+            current_channel_id = self.active_reports[interaction.user.id]
+            current_channel = interaction.guild.get_channel(current_channel_id)
+            if current_channel:
+                await interaction.response.send_message(
+                    f"Você já tem um relatório em andamento no canal {current_channel.mention}. Por favor, aguarde a conclusão do atual.",
+                    ephemeral=True
+                )
+            else:
+                del self.active_reports[interaction.user.id]
+                await interaction.response.send_message(
+                    "Um relatório anterior não foi encontrado. Iniciando um novo...",
+                    ephemeral=True
+                )
+                await self._create_and_start_report(interaction, member)
+            return
 
-            if interaction.user.id in self.active_reports:
-                await interaction.response.send_message(f"Já existe um relatório em andamento para {interaction.user.display_name}. Por favor, aguarde a conclusão do atual.", ephemeral=True)
+        await self._create_and_start_report(interaction, member)
+    async def _create_and_start_report(self, interaction: discord.Interaction, member: discord.Member):
+        try:
+            # Tenta obter a categoria de relatórios
+            relatorio_category = discord.utils.get(interaction.guild.categories, id=ID_CATEGORY_RELATORIOS)
+            if not relatorio_category:
+                await interaction.response.send_message("A categoria de relatórios não foi encontrada. Verifique o ID configurado.", ephemeral=True)
                 return
 
-            await interaction.response.send_message(relatorio_channel.mention,
-                                                    ephemeral = True)
-            await self.start_questions(relatorio_channel, member, interaction=interaction)
+            # Cria o canal de texto para o relatório
+            relatorio_channel = await interaction.guild.create_text_channel(
+                name=f"relatorio-{member.display_name.lower().replace(' ', '-')}-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
+                category=relatorio_category,
+                overwrites={
+                    interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False), # Ninguém pode ver por padrão
+                    interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True), # O relator pode ver e enviar mensagens
+                    self.bot.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True, manage_messages=True) # Bot precisa de permissões
+                }
+            )
+        except discord.Forbidden:
+            await interaction.response.send_message("Não tenho permissão para criar canais. Verifique minhas permissões no servidor e na categoria de relatórios.", ephemeral=True)
+            return
+        except Exception as e:
+            await interaction.response.send_message(f"Ocorreu um erro ao criar o canal do relatório: {e}", ephemeral=True)
+            print(f"Erro ao criar o canal do relatório: {e}")
+            return
+
+        # Adiciona o relatório ativo ao dicionário, usando o ID do relator
+        self.active_reports[interaction.user.id] = relatorio_channel.id
+
+        await interaction.response.send_message(f"Canal de relatório criado: {relatorio_channel.mention}", ephemeral=True)
+        await self.start_questions(relatorio_channel, member, interaction)
 
     async def start_questions(self, channel: discord.TextChannel, member: discord.Member, interaction: discord.Interaction):
         responses = {}
-
-        self.active_reports[member.id] = channel.id
 
         await channel.send(f"Olá {interaction.user.mention}! Este é o canal do seu relatório sobre o Piloto {member.nick}. Por favor, responda às perguntas abaixo.")
 
@@ -110,10 +141,10 @@ class Relatorio(commands.Cog,):
                         responses[f"Q{i+1}"] = "Tempo esgotado para esta pergunta."
                         await channel.send("Tempo esgotado para esta pergunta.", delete_after=5)
                     else:
-                        await channel.send("Resposta registrada com sucesso!", delete_after=5)
                         option_index = int(view.response.split('_')[1])
                         selected_option = q_data["options"][option_index]
                         responses[f"Q{i+1}"] = selected_option
+                        await channel.send(f"✅ Sua resposta: **{selected_option}** foi registrada!", delete_after=5)
                 else:
                     responses[f"Q{i+1}"] = "Nenhuma resposta fornecida (botão não clicado)."
 
@@ -123,8 +154,8 @@ class Relatorio(commands.Cog,):
                 try:
                     msg = await self.bot.wait_for('message', check=check, timeout=600.0)
                     responses[f"Q{i+1}"] = msg.content
-                    await channel.send("Resposta registrada com sucesso!", delete_after=5)
-                    await channel.purge(limit=100)
+                    await channel.send("✅ Sua resposta foi registrada!", delete_after=5)
+                    await channel.purge(limit=10)
                 except asyncio.TimeoutError:
                     responses[f"Q{i+1}"] = "Tempo esgotado para esta pergunta descritiva."
                     await channel.send("Tempo esgotado para esta pergunta.", delete_after=5)
