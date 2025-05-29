@@ -213,7 +213,6 @@ class Relatorio(commands.Cog,):
                         answer_text = responses.get(f'Q{i+1}', 'N/A')
                         file.write(f"Pergunta: {question_text}\n")
                         file.write(f"Resposta: {answer_text}\n")
-                        await asyncio.sleep(1)
                     await channel.send("Enviando arquivo em txt para canal de Log!")
                     await channel_log.send(f"Relatorio de {target_name} feito por {interaction.user.display_name} apresentou erro, enviando em formato TXT.")
                     await channel_log.send(file=discord.File(f"{filename}"))
