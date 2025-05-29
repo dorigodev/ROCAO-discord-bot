@@ -223,13 +223,15 @@ class Relatorio(commands.Cog,):
             print(f"Erro ao deletar o canal {channel.name}: {e}")
 
     @app_commands.command(name="remove_active_reports", description="Remove id dos relatorios ativos.")
-    async def remove_active_report(self, interaction: discord.Interaction, member: discord.Member.id):
+    @app_commands.describe(member="id do discord da pessoa")
+    async def remove_active_report(self, interaction: discord.Interaction, member: int):
+        await interaction.response.defer()
         if interaction.user.guild_permissions.administrator:
             if member in self.active_reports:
                 del self.active_reports[member]
-                await interaction.followup.send_message("Nome removido dos relatorios ativos.")
+                await interaction.followup.send("Nome removido dos relatorios ativos.")
             else:
-                await interaction.followup.send_message("Nenhum relatorio ativo.")
+                await interaction.followup.send("Nenhum relatorio ativo.")
         else:
             await interaction.followup.send("Somente uma Administrador pode retirar você dos relatórios ativos.")
 
