@@ -202,13 +202,10 @@ class Relatorio(commands.Cog,):
             except Exception as e:
                 await channel.send(f"Ocorreu um erro ao enviar o relatório para o canal de log: {e}, por favor, aguarde", delete_after=15)
                 await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: Ocorreu um erro ao enviar o relatório para o canal de log: {e}")
-                regex = re.sub(r"\s+", "_", target_name)
-                filename = f"{regex}_{datetime.date.today().strftime('%Y%m%d')}.txt"
                 filename = ""
                 try:
                     sanitized_target_name = re.sub(r'[^\w\s-]', '', target_name).replace(' ', '_')
                     filename = f"{sanitized_target_name}_{datetime.date.today().strftime('%Y%m%d')}.txt"
-
                     with open(filename, "w", encoding='utf-8') as file:
                         file.write("📋 Relatório de Avaliação do Piloto \n")
                         file.write(f"Piloto Avaliado:{target_name}  \n")
@@ -222,7 +219,6 @@ class Relatorio(commands.Cog,):
                             except Exception as loop_e:
                                 print(f"Erro ao processar a pergunta {i+1} para o arquivo TXT: {loop_e}. Dados da pergunta: {q_data}")
                                 file.write(f" ERRO: Não foi possível processar a Pergunta {i+1} devido a: {loop_e}\n\n")
-
                     await channel.send("Enviando arquivo em txt para canal de Log!")
                     if channel_log:
                         await channel_log.send(f"Relatorio de {target_name} feito por {interaction.user.display_name} apresentou erro, enviando em formato TXT.")
@@ -232,7 +228,7 @@ class Relatorio(commands.Cog,):
                     else:
                         print("Erro: Nenhum canal de log disponível para enviar o arquivo TXT de fallback.")
                 except Exception as file_process_error:
-                    await channel.send(f"Ocorreu um erro CRÍTICO ao tentar salvar/enviar o relatório em arquivo: {file_process_error}", delete_after=15)
+                    await channel_error_log.send(f"Ocorreu um erro CRÍTICO ao tentar salvar/enviar o relatório em arquivo: {file_process_error}")
                     print(f"Erro CRÍTICO ao salvar/enviar relatório em arquivo: {file_process_error}")
                 finally:
                     if os.path.exists(filename):
