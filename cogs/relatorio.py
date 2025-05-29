@@ -204,27 +204,39 @@ class Relatorio(commands.Cog,):
                 await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: Ocorreu um erro ao enviar o relatório para o canal de log: {e}")
                 regex = re.sub(r"\s+", "_", target_name)
                 filename = f"{regex}_{datetime.date.today().strftime('%Y%m%d')}.txt"
-            try:
+                filename = ""
+                try:
+                    sanitized_target_name = re.sub(r'[^\w\s-]', '', target_name).replace(' ', '_')
+                    filename = f"{sanitized_target_name}_{datetime.date.today().strftime('%Y%m%d')}.txt"
+
                     with open(filename, "w", encoding='utf-8') as file:
                         file.write("📋 Relatório de Avaliação do Piloto \n")
                         file.write(f"Piloto Avaliado:{target_name}  \n")
                         file.write(f"Relatório Feito Por: {interaction.user.display_name}  \n")
                         for i, q_data in enumerate(QUESTIONS):
                             try:
-                                question_text = q_data['question']
+                                question_text = q_data.get('question', 'Pergunta Desconhecida')
                                 answer_text = responses.get(f'Q{i+1}', 'N/A')
                                 file.write(f"Pergunta: {question_text}\n")
-                                file.write(f"Resposta: {answer_text}\n")
+                                file.write(f"Resposta: {answer_text}\n\n")
                             except Exception as loop_e:
                                 print(f"Erro ao processar a pergunta {i+1} para o arquivo TXT: {loop_e}. Dados da pergunta: {q_data}")
                                 file.write(f" ERRO: Não foi possível processar a Pergunta {i+1} devido a: {loop_e}\n\n")
-                        await channel.send("Enviando arquivo em txt para canal de Log!")
+
+                    await channel.send("Enviando arquivo em txt para canal de Log!")
+                    if channel_log:
                         await channel_log.send(f"Relatorio de {target_name} feito por {interaction.user.display_name} apresentou erro, enviando em formato TXT.")
-                        await channel_log.send(file=discord.File(f"{filename}"))
-            finally:
-                if os.path.exists(filename):
-                    os.remove(filename)
-                print(f"Erro ao enviar o relatório para o canal de log: {e}")
+                        await channel_log.send(file=discord.File(filename))
+                    elif channel_error_log:
+                        await channel_error_log.send(f"Relatorio de {target_name} feito por {interaction.user.display_name} apresentou erro, enviando em formato TXT (via canal de erro).", file=discord.File(filename))
+                    else:
+                        print("Erro: Nenhum canal de log disponível para enviar o arquivo TXT de fallback.")
+                except Exception as file_process_error:
+                    await channel.send(f"Ocorreu um erro CRÍTICO ao tentar salvar/enviar o relatório em arquivo: {file_process_error}", delete_after=15)
+                    print(f"Erro CRÍTICO ao salvar/enviar relatório em arquivo: {file_process_error}")
+                finally:
+                    if os.path.exists(filename):
+                        os.remove(filename)
         else:
             await channel.send("O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
             await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
