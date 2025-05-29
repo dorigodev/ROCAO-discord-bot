@@ -6,6 +6,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 import json
+import re
 
 load_dotenv()
 
@@ -199,8 +200,24 @@ class Relatorio(commands.Cog,):
                 await channel_error_log.send(f"Error no: {channel.name} Não tenho permissão para enviar mensagens no canal de log. O relatório foi concluído, mas não salvo no log.")
                 print(f"Não tenho permissão para enviar mensagens no canal de log ({ID_CHANNEL_LOG_RELATORIOS}).")
             except Exception as e:
-                await channel.send(f"Ocorreu um erro ao enviar o relatório para o canal de log: {e}", delete_after=15)
+                await channel.send(f"Ocorreu um erro ao enviar o relatório para o canal de log: {e}, por favor, aguarde", delete_after=15)
                 await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: Ocorreu um erro ao enviar o relatório para o canal de log: {e}")
+                regex = re.sub(r"\s+", "_", target_name)
+                filename = f"{regex}_{datetime.date.today().strftime('%Y%m%d')}.txt"
+                with open(filename, "w", encoding='utf-8') as file:
+                    file.write("📋 Relatório de Avaliação do Piloto \n")
+                    file.write(f"Piloto Avaliado:{target_name}  \n")
+                    file.write(f"Relatório Feito Por: {interaction.user.display_name}  \n")
+                    for i, q_data in enumerate(QUESTIONS):
+                        question_text = q_data['question']
+                        answer_text = responses.get(f'Q{i+1}', 'N/A')
+                        file.write(f"Pergunta: {question_text}\n")
+                        file.write(f"Resposta: {answer_text}\n")
+                        await asyncio.sleep(1)
+                    await channel.send("Enviando arquivo em txt para canal de Log!")
+                    await channel_log.send(f"Relatorio de {target_name} feito por {interaction.user.display_name} apresentou erro, enviando em formato TXT.")
+                    await channel_log.send(file=discord.File(f"{filename}"))
+                    os.remove(f"{filename}")
                 print(f"Erro ao enviar o relatório para o canal de log: {e}")
         else:
             await channel.send("O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
