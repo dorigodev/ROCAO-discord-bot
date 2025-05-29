@@ -61,16 +61,10 @@ class Relatorio(commands.Cog,):
     piloto="Um nome personalizado para o relatório, se o membro não for do Discord (opcional).")
     async def criar_relatorio(self, interaction: discord.Interaction, member: discord.Member = None, piloto: str = None ):
 
-        target_name = None
-        target_mention = "Nome Inválido" # Valor padrão para o caso de erro
-        target_id_for_active_reports = interaction.user.id # Continua rastreando pelo relator
-
         if member:
             target_name = member.display_name
-            target_mention = member.mention
         elif piloto:
             target_name = piloto
-            target_mention = f"**{piloto}**"
         else:
             await interaction.followup.send(
                 "Você deve especificar um `member` ou um `piloto` para criar o relatório.",
@@ -92,12 +86,12 @@ class Relatorio(commands.Cog,):
                     "Um relatório anterior não foi encontrado. Iniciando um novo...",
                     ephemeral=True
                 )
-                await self._create_and_start_report(interaction, target_name, target_mention)
+                await self._create_and_start_report(interaction, target_name)
             return
 
-        await self._create_and_start_report(interaction, target_name, target_mention)
+        await self._create_and_start_report(interaction, target_name)
 
-    async def _create_and_start_report(self, interaction: discord.Interaction, target_name: str, target_mention: str):
+    async def _create_and_start_report(self, interaction: discord.Interaction, target_name: str):
         try:
             relatorio_category = discord.utils.get(interaction.guild.categories, id=ID_CATEGORY_RELATORIOS)
             if not relatorio_category:
@@ -124,9 +118,9 @@ class Relatorio(commands.Cog,):
         self.active_reports[interaction.user.id] = relatorio_channel.id
 
         await interaction.response.send_message(f"Canal de relatório criado: {relatorio_channel.mention}", ephemeral=True)
-        await self.start_questions(relatorio_channel, target_name, target_mention, interaction)
+        await self.start_questions(relatorio_channel, target_name, interaction)
 
-    async def start_questions(self, channel: discord.TextChannel, target_name: str, target_mention: str, interaction: discord.Interaction):
+    async def start_questions(self, channel: discord.TextChannel, target_name: str, interaction: discord.Interaction):
         channel_error_log = discord.utils.get(channel.guild.channels, id=ID_CHANNEL_LOG_ERROR)
 
         responses = {}
@@ -228,6 +222,16 @@ class Relatorio(commands.Cog,):
             await channel_error_log.send(f"Error ao deletar o canal: {channel.name}: {e}.")
             print(f"Erro ao deletar o canal {channel.name}: {e}")
 
+    @app_commands.command(name="remove_active_reports", description="Remove id dos relatorios ativos.")
+    async def remove_active_report(self, interaction: discord.Interaction, member: discord.Member.id):
+        if interaction.user.guild_permissions.administrator:
+            if member in self.active_reports:
+                del self.active_reports[member]
+                await interaction.followup.send_message("Nome removido dos relatorios ativos.")
+            else:
+                await interaction.followup.send_message("Nenhum relatorio ativo.")
+        else:
+            await interaction.followup.send("Somente uma Administrador pode retirar você dos relatórios ativos.")
 
 async def setup(bot):
     await bot.add_cog(Relatorio(bot))
