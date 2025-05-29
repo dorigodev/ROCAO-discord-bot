@@ -11,6 +11,7 @@ load_dotenv()
 
 ID_CATEGORY_RELATORIOS = int(os.getenv('ID_CATEGORY_RELATORIOS'))
 ID_CHANNEL_LOG_RELATORIOS = int(os.getenv('ID_CHANNEL_LOG_RELATORIOS'))
+ID_CHANNEL_LOG_ERROR = int(os.getenv('ID_CHANNEL_LOG_ERROR'))
 
 try:
     with open('questions.json', 'r', encoding='utf-8') as f:
@@ -18,10 +19,10 @@ try:
     print("Perguntas carregadas com sucesso de questions.json")
 except FileNotFoundError:
     print("Erro: O arquivo questions.json não foi encontrado. Certifique-se de que ele está na mesma pasta do bot.")
-    QUESTIONS = [] # Define uma lista vazia para evitar erros posteriores
+    QUESTIONS = [] # lista vazia para evitar erros
 except json.JSONDecodeError:
     print("Erro: O arquivo questions.json está mal formatado. Verifique a sintaxe JSON.")
-    QUESTIONS = [] # Define uma lista vazia para evitar erros posteriores
+    QUESTIONS = [] # lista vazia para evitar erros
 
 class QuestionView(discord.ui.View):
     def __init__(self, question_data, reporter_id, timeout=180):
@@ -126,6 +127,8 @@ class Relatorio(commands.Cog,):
         await self.start_questions(relatorio_channel, target_name, target_mention, interaction)
 
     async def start_questions(self, channel: discord.TextChannel, target_name: str, target_mention: str, interaction: discord.Interaction):
+        channel_error_log = discord.utils.get(channel.guild.channels, id=ID_CHANNEL_LOG_ERROR)
+
         responses = {}
 
         await channel.send(f"Olá {interaction.user.mention}! Este é o canal do seu relatório sobre **{target_name}**. Por favor, responda às perguntas abaixo.")
@@ -170,6 +173,7 @@ class Relatorio(commands.Cog,):
         except discord.Forbidden:
             print(f"Não pude limpar o chat final. Verifique as permissões.")
         except Exception as e:
+            await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: {e}")
             print(f"Erro ao limpar o chat final: {e}")
         await channel.send("Todas as perguntas foram respondidas. Compilando o relatório...", delete_after=5)
 
@@ -192,17 +196,21 @@ class Relatorio(commands.Cog,):
 
 
         channel_log = discord.utils.get(channel.guild.channels, id=ID_CHANNEL_LOG_RELATORIOS)
+
         if channel_log:
             try:
                 await channel_log.send(embed=embed)
             except discord.Forbidden:
                 await channel.send("Não tenho permissão para enviar mensagens no canal de log. O relatório foi concluído, mas não salvo no log.", delete_after=15)
+                await channel_error_log.send(f"Error no: {channel.name} Não tenho permissão para enviar mensagens no canal de log. O relatório foi concluído, mas não salvo no log.")
                 print(f"Não tenho permissão para enviar mensagens no canal de log ({ID_CHANNEL_LOG_RELATORIOS}).")
             except Exception as e:
                 await channel.send(f"Ocorreu um erro ao enviar o relatório para o canal de log: {e}", delete_after=15)
+                await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: Ocorreu um erro ao enviar o relatório para o canal de log: {e}")
                 print(f"Erro ao enviar o relatório para o canal de log: {e}")
         else:
-            await channel.send("O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.", delete_after=15)
+            await channel.send("O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
+            await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
             print(f"Canal de log de relatórios não encontrado com ID: {ID_CHANNEL_LOG_RELATORIOS}")
 
 
@@ -215,7 +223,9 @@ class Relatorio(commands.Cog,):
             await channel.delete()
         except discord.Forbidden:
             print(f"Não tenho permissão para deletar o canal {channel.name}. Deletar manualmente.")
+            await channel_error_log.send(f"Não tenho permissão para deletar o canal {channel.name}. Deletar manualmente.")
         except Exception as e:
+            await channel_error_log.send(f"Error ao deletar o canal: {channel.name}: {e}.")
             print(f"Erro ao deletar o canal {channel.name}: {e}")
 
 
