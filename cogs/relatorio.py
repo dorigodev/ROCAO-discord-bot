@@ -5,10 +5,13 @@ import os
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
+import pytz
 import json
 import re
 
 load_dotenv()
+
+sao_paulo_now = datetime.datetime.now(pytz.utc).astimezone(pytz.timezone('America/Sao_Paulo'))
 
 ID_CATEGORY_RELATORIOS = int(os.getenv('ID_CATEGORY_RELATORIOS'))
 ID_CHANNEL_LOG_RELATORIOS = int(os.getenv('ID_CHANNEL_LOG_RELATORIOS'))
@@ -100,7 +103,7 @@ class Relatorio(commands.Cog,):
                 return
 
             relatorio_channel = await interaction.guild.create_text_channel(
-                name=f"relatorio-{target_name.lower().replace(' ', '-')}-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
+                name=f"relatorio-{target_name.lower().replace(' ', '-')}-{sao_paulo_now.strftime('%Y%m%d%H%M%S')}",
                 category=relatorio_category,
                 overwrites={
                     interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
@@ -168,7 +171,7 @@ class Relatorio(commands.Cog,):
         except discord.Forbidden:
             print(f"Não pude limpar o chat final. Verifique as permissões.")
         except Exception as e:
-            await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: {e}")
+            await channel_error_log.send(f"Erro no: {channel.name}, Data: {sao_paulo_now}: {e}")
             print(f"Erro ao limpar o chat final: {e}")
         await channel.send("Todas as perguntas foram respondidas. Compilando o relatório...", delete_after=5)
 
@@ -177,7 +180,7 @@ class Relatorio(commands.Cog,):
             title=f"📋 Relatório de Avaliação do Piloto",
             description=f"**Piloto Avaliado:** {target_name}\n"
                         f"**Relatório Feito Por:** {interaction.user.display_name}\n"
-                        f"**Data/Hora:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
+                        f"**Data/Hora:** {sao_paulo_now.strftime('%d/%m/%Y %H:%M:%S')}",
             color=discord.Color.blue()
         )
 
@@ -201,7 +204,7 @@ class Relatorio(commands.Cog,):
                 print(f"Não tenho permissão para enviar mensagens no canal de log ({ID_CHANNEL_LOG_RELATORIOS}).")
             except Exception as e:
                 await channel.send(f"Ocorreu um erro ao enviar o relatório para o canal de log: {e}, por favor, aguarde", delete_after=15)
-                await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: Ocorreu um erro ao enviar o relatório para o canal de log: {e}")
+                await channel_error_log.send(f"Erro no: {channel.name}, Data: {sao_paulo_now}: Ocorreu um erro ao enviar o relatório para o canal de log: {e}")
                 filename = ""
                 try:
                     sanitized_target_name = re.sub(r'[^\w\s-]', '', target_name).replace(' ', '_')
@@ -235,7 +238,7 @@ class Relatorio(commands.Cog,):
                         os.remove(filename)
         else:
             await channel.send("O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
-            await channel_error_log.send(f"Erro no: {channel.name}, Data: {datetime.datetime.now()}: O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
+            await channel_error_log.send(f"Erro no: {channel.name}, Data: {sao_paulo_now}: O canal de log de relatórios não foi encontrado. O relatório foi concluído, mas não salvo no log.")
             print(f"Canal de log de relatórios não encontrado com ID: {ID_CHANNEL_LOG_RELATORIOS}")
 
 
