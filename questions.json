@@ -2,7 +2,7 @@
   {
     "type": "multiple_choice",
     "question": "De uma nota para a Dirigibilidade:",
-    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+    "options": ["Péssimo", "Ruim", "N/A", "Mediano", "Bom", "Excelente"]
   },
   {
     "type": "descriptive",
@@ -12,7 +12,7 @@
   {
     "type": "multiple_choice",
     "question": "De uma nota para a Posicionamento:",
-    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+    "options": ["Péssimo", "Ruim", "N/A", "Mediano", "Bom", "Excelente"]
   },
   {
     "type": "descriptive",
@@ -22,7 +22,7 @@
   {
     "type": "multiple_choice",
     "question": "De uma nota para a Adiantamento:",
-    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+    "options": ["Péssimo", "Ruim", "N/A", "Mediano", "Bom", "Excelente"]
   },
   {
     "type": "descriptive",
@@ -32,7 +32,7 @@
   {
     "type": "multiple_choice",
     "question": "De uma nota para a Modulação:",
-    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+    "options": ["Péssimo", "Ruim","N/A", "Mediano", "Bom", "Excelente"]
   },
   {
     "type": "descriptive",
@@ -42,7 +42,7 @@
   {
     "type": "multiple_choice",
     "question": "De uma nota para a Abordagem:",
-    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+    "options": ["Péssimo", "Ruim","N/A", "Mediano", "Bom", "Excelente"]
   },
   {
     "type": "descriptive",
@@ -52,7 +52,7 @@
   {
     "type": "multiple_choice",
     "question": "De uma nota para a Postura:",
-    "options": ["Péssimo", "Ruim", "Mediano", "Bom", "Excelente"]
+    "options": ["Péssimo", "Ruim","N/A", "Mediano", "Bom", "Excelente"]
   },
   {
     "type": "descriptive",
