@@ -9,18 +9,24 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.all()
 
-bot = commands.Bot(command_prefix='!',intents=intents)
 
-async def load_cogs():
- for filename in os.listdir('cogs'):
-  if filename.endswith('.py'):
-    await bot.load_extension(f'cogs.{filename[:-3]}')
+class RocaoBot(commands.Bot):
+    def __init__(self):
+        super().__init__(command_prefix='!', intents=intents)
+
+    async def setup_hook(self):
+        for filename in os.listdir('cogs'):
+            if filename.endswith('.py'):
+                await self.load_extension(f'cogs.{filename[:-3]}')
+
+        await self.tree.sync()
+
+
+bot = RocaoBot()
 
 
 @bot.event
 async def on_ready():
-    await load_cogs()
-    await bot.tree.sync()
     print(f'We have logged in as {bot.user}')
 
 @bot.command()
