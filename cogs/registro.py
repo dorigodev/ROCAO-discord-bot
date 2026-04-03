@@ -24,7 +24,7 @@ class RegistroModal(discord.ui.Modal, title="Registro de Membro"):
     )
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
-        novo_nick = f"[{self.user_id.value}] {self.nome.value}"
+        novo_nick = f"「 {self.user_id.value} 」 {self.nome.value}"
         cargo = interaction.guild.get_role(ROLE_ID_REGISTRO) if interaction.guild else None
 
         try:
